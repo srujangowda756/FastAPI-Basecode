@@ -5,8 +5,8 @@ from fastapi.security import OAuth2PasswordBearer
 from features.config import settings
 
 SECRET_KEY = settings.SECRET_KEY
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 90
+ALGORITHM = settings.ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()

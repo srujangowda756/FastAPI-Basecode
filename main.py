@@ -1,10 +1,9 @@
-from fastapi import FastAPI,Request,WebSocket
+from fastapi import FastAPI,Request
 from fastapi.middleware.cors import CORSMiddleware
 # from routes.fileName import route
 from fastapi.responses import JSONResponse
 import time
 import logging
-from features.manager_websocket import manager 
 
 
 app = FastAPI()
