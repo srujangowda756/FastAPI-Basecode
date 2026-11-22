@@ -7,7 +7,6 @@ from routes.user import route as user_router
 from routes.admin import route as admin_route
 
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
@@ -15,8 +14,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="test",
-    description="something",
+    title="",
+    description="",
     version="1.0.0",
     lifespan=lifespan
 )
