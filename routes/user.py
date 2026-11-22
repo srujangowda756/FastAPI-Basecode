@@ -2,11 +2,10 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from schema.user import UserLogin, UserRegister, UserResponse, UserUpdate
 from core.utlity import DUMMY_HASH, hash_password, verify_password
 from database import get_db
 from model.user import User
-from schema.user import UserLogin, UserRegister, UserResponse
 from core.auth import create_access_token, get_current_user
 
 def send_email(email:str):
@@ -27,8 +26,7 @@ async def user_register(
         name=data.name,
         email=data.email,
         phone=data.phone,
-        password_hash=await hash_password(data.password),
-        gender=data.gender,
+        password_hash=await hash_password(data.password)
     )
     try:
         db.add(new_user)
@@ -61,4 +59,16 @@ async def user_login(data: UserLogin, db: AsyncSession = Depends(get_db)):
 
 @route.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@route.patch("/me", response_model=UserResponse)
+async def update_me(
+    data: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(current_user, field, value)
+    await db.commit()
+    await db.refresh(current_user)
     return current_user

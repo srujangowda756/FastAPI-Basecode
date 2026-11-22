@@ -5,7 +5,7 @@ from sqlalchemy import Column,String,DateTime,Boolean,Enum
 from sqlalchemy.dialects.postgresql import UUID
 
 from database import Base
-from model.enum import Gender
+from model.enum import Role
 
 
 class User(Base):
@@ -16,11 +16,14 @@ class User(Base):
     email = Column(String, unique=True, nullable=False, index=True)
     phone = Column(String(15), unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
-
-    gender = Column(Enum(Gender, name="gender_enum"), nullable=True)
     phone_verified = Column(Boolean, nullable=False, default=False)
     is_blocked = Column(Boolean, nullable=False, default=False)
-
+    role = Column(
+        Enum(Role, name="role_enum"),
+        nullable=False,
+        default=Role.user,
+        server_default="user",
+    )
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,

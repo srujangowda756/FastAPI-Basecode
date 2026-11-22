@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.config import settings
 from database import get_db
 from model.user import User
+from model.enum import Role
+
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
@@ -55,3 +57,11 @@ async def get_verified_user(user: User = Depends(get_current_user)) -> User:
     if not user.phone_verified:
         raise HTTPException(status_code=403, detail="phone not verified")
     return user
+
+def require_role(*roles: Role):
+    async def checker(user: User = Depends(get_current_user)) -> User:
+        if user.role not in roles:
+            raise HTTPException(status_code=403, detail="forbidden")
+        return user
+
+    return checker

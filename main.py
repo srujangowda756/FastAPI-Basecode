@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import engine
 from routes.user import route as user_router
+from routes.admin import route as admin_route
+
 
 
 @asynccontextmanager
@@ -13,8 +15,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="",
-    description="",
+    title="test",
+    description="something",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -38,3 +40,4 @@ async def health_route():
 
 
 app.include_router(user_router)
+app.include_router(admin_route)

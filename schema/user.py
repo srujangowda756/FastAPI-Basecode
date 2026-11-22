@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from model.enum import Gender, Diet, Mode, OccupationCategory
+from model.enum import Role
 
 PHONE_REGEX = re.compile(r"^\+?[0-9]{10,14}$")
 
@@ -15,8 +15,6 @@ class UserRegister(BaseModel):
     email: EmailStr
     phone: str
     password: str = Field(min_length=8, max_length=128)
-
-    gender: Optional[Gender] = None
 
     @field_validator("email")
     @classmethod
@@ -46,8 +44,20 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     name: str
     email: EmailStr
-    gender: Optional[Gender] = None
     phone_verified: bool
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class UserUpdate(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+
+    @field_validator("name")
+    @classmethod
+    def name_not_null(cls, v):
+        if v is None:
+            raise ValueError("name cannot be null")
+        return v
