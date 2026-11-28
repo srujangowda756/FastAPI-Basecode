@@ -65,3 +65,8 @@ def require_role(*roles: Role):
         return user
 
     return checker
+
+async def get_complete_user(user: User = Depends(get_verified_user)) -> User:
+    if user.profile_photo_id is None:
+        raise HTTPException(status_code=403, detail="profile photo required")
+    return user

@@ -2,8 +2,8 @@ import re
 import uuid
 from datetime import datetime
 from typing import Optional
-
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from core.storage import profile_keys, signed_url
+from pydantic import BaseModel, EmailStr, Field, field_validator,computed_field
 
 from model.enum import Role
 
@@ -46,6 +46,26 @@ class UserResponse(BaseModel):
     email: EmailStr
     phone_verified: bool
     created_at: datetime
+    profile_photo_id: Optional[uuid.UUID] = Field(default=None, exclude=True)
+
+    @computed_field
+    @property
+    def has_profile_photo(self) -> bool:
+        return self.profile_photo_id is not None
+
+    @computed_field
+    @property
+    def profile_photo_url(self) -> Optional[str]:
+        if self.profile_photo_id is None:
+            return None
+        return signed_url(profile_keys(self.profile_photo_id)[0])
+
+    @computed_field
+    @property
+    def profile_photo_thumb_url(self) -> Optional[str]:
+        if self.profile_photo_id is None:
+            return None
+        return signed_url(profile_keys(self.profile_photo_id)[1])
 
     model_config = {"from_attributes": True}
 

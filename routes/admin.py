@@ -1,5 +1,7 @@
 import uuid
-
+import logging
+from core.storage import delete_keys, profile_keys, signed_url
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -69,3 +71,38 @@ async def unblock_user(
     target = await _load_target(db, actor, user_id)
     target.is_blocked = False
     return await _finish(db, actor, target, "unblock", data.reason)
+
+
+@route.post("/users/{user_id}/photo/remove", response_model=AdminUserResponse)
+async def remove_photo(
+    user_id: uuid.UUID,
+    data: AdminAction,
+    actor: User = Depends(staff),
+    db: AsyncSession = Depends(get_db),
+):
+    target = await _load_target(db, actor, user_id)
+    old_id = target.profile_photo_id
+    if old_id is None:
+        raise HTTPException(status_code=404, detail="no photo")
+    target.profile_photo_id = None
+    target = await _finish(db, actor, target, "remove_photo", data.reason)
+    try:
+        await delete_keys(list(profile_keys(old_id)))
+    except Exception:
+        logger.exception("failed to delete photo %s", old_id)
+    return target
+
+
+@route.get("/users/{user_id}/photo")
+async def view_photo(
+    user_id: uuid.UUID,
+    actor: User = Depends(staff),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.id == user_id))
+    target = result.scalars().first()
+    if target is None or target.profile_photo_id is None:
+        raise HTTPException(status_code=404, detail="no photo")
+    db.add(AuditLog(actor_id=actor.id, target_id=target.id, action="view_photo", reason=None))
+    await db.commit()
+    return {"url": signed_url(profile_keys(target.profile_photo_id)[0])}

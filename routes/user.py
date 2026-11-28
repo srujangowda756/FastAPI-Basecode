@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException,File, UploadFile
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +7,12 @@ from core.utlity import DUMMY_HASH, hash_password, verify_password
 from database import get_db
 from model.user import User
 from core.auth import create_access_token, get_current_user
+import logging
+import uuid
+from core.images import process_image, read_limited
+from core.storage import delete_keys, profile_keys, upload_bytes
+
+logger = logging.getLogger(__name__)
 
 def send_email(email:str):
     print(f"welcome {email}, you are now member")
@@ -71,4 +77,39 @@ async def update_me(
         setattr(current_user, field, value)
     await db.commit()
     await db.refresh(current_user)
+    return current_user
+
+
+@route.put("/me/photo", response_model=UserResponse)
+async def upload_photo(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    raw = await read_limited(file)
+    full, thumb = await process_image(raw)
+
+    new_id = uuid.uuid4()
+    full_key, thumb_key = profile_keys(new_id)
+    old_id = current_user.profile_photo_id
+
+    await upload_bytes(full_key, full)
+    try:
+        await upload_bytes(thumb_key, thumb)
+        current_user.profile_photo_id = new_id
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        try:
+            await delete_keys([full_key, thumb_key])
+        except Exception:
+            logger.exception("cleanup failed for %s", new_id)
+        raise
+    await db.refresh(current_user)
+
+    if old_id is not None:
+        try:
+            await delete_keys(list(profile_keys(old_id)))
+        except Exception:
+            logger.exception("failed to delete old profile photo %s", old_id)
     return current_user
