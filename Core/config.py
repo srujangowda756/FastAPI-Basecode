@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     S3_REGION:str
     SIGNED_URL_EXPIRE_SECONDS: int = 600
     MAX_UPLOAD_BYTES: int = 5 * 1024 * 1024
+    LLM_API_KEY:str
 
     model_config = SettingsConfigDict(
         env_file=".env",
